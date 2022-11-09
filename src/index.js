@@ -1,16 +1,19 @@
 import express, { json } from 'express';
 import cors from 'cors';
 import { MongoClient } from 'mongodb';
+import dayjs from 'dayjs'
+import "dayjs/locale/pt-br.js ";
 
 
 const app = express();
 app.use(cors());
 app.use(express.json()); 
 
+const time = dayjs().locale("pt-br").format("HH:MM:SS")
+
 
 const mongoClient = new MongoClient("mongodb://localhost:27017"); // conectando a porta do mongo
-let db;
-
+let db; 
 mongoClient.connect().then(() => {
     db = mongoClient.db("batePapoUol") // conectando ao data base, onde vão ter as collections 
 })
@@ -24,34 +27,50 @@ app.post("/participants", (req, res) => {
         return res.sendStatus(422);
     }
 
-    const user = {name}
+    const user = {
+        name, 
+        lastStatus: Date.now()
+    };
 
-    db.collection("user").insertOne(user)
-    .then(res.sendStatus(201))
-    .catch(res.sendStatus(500)); // inserindo o nome no mongo
+    const msg = {
+        from: name, 
+        to: 'Todos', 
+        text: 'entra na sala...', 
+        type: 'status', 
+        time
+    }
+
+    db.collection("messages").insertOne(msg); // inserindo a mensagem no mongo
+
+    db.collection("users").insertOne(user)
+    .then(res.sendStatus(201)); // inserindo o nome no mongo
 });
 
 app.get("/participants", (req, res) => {
-    db.collection("user").find().toArray()
+    db.collection("users").find().toArray()
     .then(user => {
         res.send(user)
-    })
-    .catch(res.send("erro no banco de dados"));
+    });
 });
 
 app.post("/messages", (req,res) => {
 
     const {to, text, type} = req.body;
-    const {from} = req.header;
+    const {User} = req.header;
 
-    if(!to || !text || !type){
+    const verifyType = ("message" || "private_message");
+    const verifyFrom = (users.find(user => user.name === User));
+
+    if(!to || !text || !verifyType || !verifyFrom){
         return res.sendStatus(422);
     }
 
     const messageCreated = {
+        from: User,
         to,
         text,
-        type
+        type,
+        time
     }
 
     db.collection("messages").insertOne(messageCreated)
@@ -62,9 +81,8 @@ app.post("/messages", (req,res) => {
 app.get("/messages", (req, res) => {
     db.collection("messages").find().toArray()
     .then(message => {
-        console.log(message)
-    })
-    .catch(res.send("erro no banco de dados"))
+        res.send(message)
+    });
 });
 
 app.post("/status", (req, res) => {
@@ -81,4 +99,4 @@ app.post("/status", (req, res) => {
 
 app.listen (5000, () => {
     console.log("server running in port 5000")
-})
+});
