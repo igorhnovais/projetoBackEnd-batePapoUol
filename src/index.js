@@ -28,7 +28,15 @@ app.post("/participants", (req, res) => {
 
     const user = {name}
 
-    db.collection("user").insertOne(user) // inserindo o nome no mongo
+    db.collection("user").insertOne(user)
+    .then(res.sendStatus(201))
+    .catch(res.sendStatus(500)) // inserindo o nome no mongo
+});
+
+app.get("/participants", (req, res) => {
+    db.collection("user").find().toArray().then(user => {
+        res.send(user)
+    }).catch(res.send("erro no banco de dados"));
 });
 
 
