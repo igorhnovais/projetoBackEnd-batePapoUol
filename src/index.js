@@ -65,7 +65,7 @@ app.get("/participants", async (req, res) => {
 app.post("/messages", async (req,res) => {
 
     const {to, text, type} = req.body;
-    const {user} = req.header;
+    const {user} = req.headers;
 
     const verifyType = ("message" || "private_message");
     const verifyFrom = users.find(atualUser => atualUser.name === user);
