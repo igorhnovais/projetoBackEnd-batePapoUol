@@ -11,7 +11,6 @@ const app = express();
 app.use(cors());
 app.use(express.json()); 
 
-const time = dayjs().format("HH:mm:ss");
 
 const mongoClient = new MongoClient(process.env.MONGO_URI); // conectando a porta do mongo
 await mongoClient.connect();
@@ -39,7 +38,7 @@ app.post("/participants",  async (req, res) => {
         to: 'Todos', 
         text: 'entra na sala...', 
         type: 'status', 
-        time
+        time:dayjs().format("HH:mm:ss")
     }
 
     try{
@@ -79,7 +78,7 @@ app.post("/messages", async (req,res) => {
         to,
         text,
         type,
-        time
+        time:dayjs().format("HH:mm:ss")
     }
 
     try{
@@ -92,7 +91,7 @@ app.post("/messages", async (req,res) => {
 
 app.get("/messages", async (req, res) => {
 
-    const {user} = req.header
+    const {user} = req.headers;
 
     let limit = parseInt(req.query.limit);
     limit = (limit > 0) ? limit : 0;
@@ -100,26 +99,37 @@ app.get("/messages", async (req, res) => {
     try{
         const message = await messages
         .find({$or: [{user}, {"type": "message"}, {"to": user}, {"to": "Todos"}]})
-        .skip(messages.count() - limit)
         .toArray();
 
-        res.send(message);
+        const filtered = [];
+        for (let i = message.length - limit; i < message.length; i++){
+            filtered.push(message[i]);
+        }
+        res.send(filtered);
+
     } catch(err){
         res.status(500).send('Server not running');
     }    
 });
 
-app.post("/status", (req, res) => {
-    const {User} = req.header
+app.post("/status", async (req, res) => {
+    const {user} = req.headers;
 
+    const lastStatus = { $set: {lastStatus: Date.now()}};
 
+    try{
+        const part = await users.find({name: user}).toArray();
 
-    if(!User){
-        return res.sendStatus(404)
+        if(part.length === 0){
+            return res.sendStatus(404);
+        }
+
+        users.updateOne({name: user}, lastStatus);
+
+        res.sendStatus(200);
+    } catch (err){
+        res.sendStatus(500);
     }
-
-    res.sendStatus(200);
-
 });
 
 setInterval( async () => {
@@ -135,7 +145,7 @@ setInterval( async () => {
                     to: "Todos",
                     text: "sai da sala...",
                     type: "status",
-                    time
+                    time:dayjs().format("HH:mm:ss")
                 };
 
                 await messages.insertOne(msg);
