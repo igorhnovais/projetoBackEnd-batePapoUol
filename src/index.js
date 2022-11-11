@@ -1,4 +1,4 @@
-import express, { json } from 'express';
+import express from 'express';
 import cors from 'cors';
 import { MongoClient } from 'mongodb';
 import dotenv from 'dotenv';
@@ -59,7 +59,7 @@ app.post("/participants",  async (req, res) => {
         text: 'entra na sala...', 
         type: 'status', 
         time:dayjs().format("HH:mm:ss")
-    }
+    };
 
     try{
         await messages.insertOne(msg); // inserindo a mensagem no mongo
@@ -74,7 +74,7 @@ app.post("/participants",  async (req, res) => {
 app.get("/participants", async (req, res) => {
     try{
         const user = await users.find().toArray();
-        res.send(user)
+        res.send(user);
     } catch (err){
         res.status(500).send('Server not running');
     }
@@ -93,7 +93,7 @@ app.post("/messages", async (req,res) => {
         return res.status(422).send(errors);
     }
 
-    const part = await users.find({ name: user }).toArray()
+    const part = await users.find({ name: user }).toArray();
     const verifyUser = part.length <= 0 ? true : false;
 
     if(verifyUser){
@@ -106,7 +106,7 @@ app.post("/messages", async (req,res) => {
         text: msg.text,
         type: msg.type,
         time:dayjs().format("HH:mm:ss")
-    }
+    };
 
     try{
         await messages.insertOne(messageCreated);
@@ -131,7 +131,7 @@ app.get("/messages", async (req, res) => {
         const filtered = [];
         for (let i = message.length - limit; i < message.length; i++){
             filtered.push(message[i]);
-        }
+        };
         res.send(filtered);
 
     } catch(err){
@@ -183,7 +183,7 @@ setInterval( async () => {
         res.status(500).send('Server not running');
     }
 
-}, 15000)
+}, 15000);
 
 
 app.listen (5000, () => {
