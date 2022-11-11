@@ -3,7 +3,18 @@ import cors from 'cors';
 import { MongoClient } from 'mongodb';
 import dotenv from 'dotenv';
 import dayjs from 'dayjs';
+import joi from 'joi';
 
+
+const userSchema = joi.object({
+    name: joi.string().required()
+});
+
+const msgSchema = joi.object({
+    to: joi.string().required(),
+    text: joi.string().required(),
+    type: joi.string().valid("message", "private_message").required()   
+});
 
 dotenv.config();
 
@@ -22,19 +33,28 @@ const messages = db.collection("messages");
 
 app.post("/participants",  async (req, res) => {
 
-    const {name} = req.body;
+    const nameBody = req.body;
 
-    if(!name || name === Number){
-        return res.sendStatus(422);
+    const { error } = userSchema.validate( nameBody, {abortEarly: false});
+
+    if(error){
+        const errors = error.details.map(detail => detail.message);
+        return res.status(422).send(errors);
+    }
+
+    const verify = await users.findOne({name: nameBody.name});
+
+    if(verify){
+        return res.status(409).send("Usuario já cadastrado");
     }
 
     const user = {
-        name, 
+        name: nameBody.name, 
         lastStatus: Date.now()
     };
 
     const msg = {
-        from: name, 
+        from: nameBody.name, 
         to: 'Todos', 
         text: 'entra na sala...', 
         type: 'status', 
@@ -63,21 +83,28 @@ app.get("/participants", async (req, res) => {
 
 app.post("/messages", async (req,res) => {
 
-    const {to, text, type} = req.body;
+    const msg = req.body;
     const {user} = req.headers;
 
-    const verifyType = ("message" || "private_message");
-    const verifyFrom = users.find(atualUser => atualUser.name === user);
+    const {error} = msgSchema.validate(msg, {abortEarly: false});
 
-    if(!to || !text || !verifyType || !verifyFrom){
+    if(error){
+        const errors = error.details.map(detail => detail.message);
+        return res.status(422).send(errors);
+    }
+
+    const part = await users.find({ name: user }).toArray()
+    const verifyUser = part.length <= 0 ? true : false;
+
+    if(verifyUser){
         return res.sendStatus(422);
     }
 
     const messageCreated = {
         from: user,
-        to,
-        text,
-        type,
+        to: msg.to,
+        text: msg.text,
+        type: msg.type,
         time:dayjs().format("HH:mm:ss")
     }
 
@@ -98,7 +125,7 @@ app.get("/messages", async (req, res) => {
 
     try{
         const message = await messages
-        .find({$or: [{user}, {"type": "message"}, {"to": user}, {"to": "Todos"}]})
+        .find({$or: [{"from":user}, {"type": "message"}, {"to": user}, {"to": "Todos"}]})
         .toArray();
 
         const filtered = [];
@@ -128,7 +155,7 @@ app.post("/status", async (req, res) => {
 
         res.sendStatus(200);
     } catch (err){
-        res.sendStatus(500);
+        res.status(500).send('Server not running');
     }
 });
 
