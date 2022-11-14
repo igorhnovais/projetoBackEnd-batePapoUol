@@ -31,7 +31,7 @@ const users = db.collection("users");
 const messages = db.collection("messages");
 
 
-app.post("/participants",  async (req, res) => {
+app.post("/participants", async (req, res) => {
 
     const nameBody = req.body;
 
@@ -67,6 +67,7 @@ app.post("/participants",  async (req, res) => {
         res.sendStatus(201);
 
     } catch (err) {
+        console.log(err);
         res.status(500).send('Server not running');
     }
 });
@@ -76,6 +77,7 @@ app.get("/participants", async (req, res) => {
         const user = await users.find().toArray();
         res.send(user);
     } catch (err){
+        console.log(err);
         res.status(500).send('Server not running');
     }
     
@@ -112,6 +114,7 @@ app.post("/messages", async (req,res) => {
         await messages.insertOne(messageCreated);
         res.sendStatus(201);
     } catch (err){
+        console.log(err);
         res.status(500).send('Server not running');
     }
 });
@@ -135,6 +138,7 @@ app.get("/messages", async (req, res) => {
         res.send(filtered);
 
     } catch(err){
+        console.log(err);
         res.status(500).send('Server not running');
     }    
 });
@@ -155,6 +159,7 @@ app.post("/status", async (req, res) => {
 
         res.sendStatus(200);
     } catch (err){
+        console.log(err);
         res.status(500).send('Server not running');
     }
 });
@@ -180,6 +185,7 @@ setInterval( async () => {
             }
         }
     } catch (err){
+        console.log(err);
         res.status(500).send('Server not running');
     }
 
@@ -187,5 +193,5 @@ setInterval( async () => {
 
 
 app.listen (5000, () => {
-    console.log("server running in port 5000")
+    console.log("server running in port 5000");
 });
